@@ -7,10 +7,10 @@ class Accident_generator:
         return(accident > 7)
 
 class Diner:
-    def __init__(self):
-        self._pickup_worker = None
-        self._pickup_food = None
-        self._dropoff_worker = None
+    def __init__(self, inRoad, inBarn, outRoad):
+        self._pickup_worker = inRoad
+        self._pickup_food = inBarn
+        self._dropoff_worker = outRoad
         self._has_worker = False
         self._has_food = False
         self._worker = []
@@ -43,6 +43,7 @@ class Diner:
 
     def _feed_worker(self):
         if self._has_food and self._has_worker:
+            #print('yes')
             #food = self._pickup_food.remove_food()
             quality = self._food[0].quality()
             self._worker[0].change_hp(quality)
@@ -56,8 +57,9 @@ class Barn:
     def __init__(self):
         self._queue = [Food() for _ in range(100)]
     
-    def add_food(self, food):
-        self._queue.append(food)
+    def add_food(self):
+        food = Food()
+        self._queue.append(Food())
 
     def remove_food(self):
         try:
@@ -67,52 +69,64 @@ class Barn:
 
 class Food:
     def __init__(self):
-        self._quality = random.randint(1,100)
+        self._quality = random.randint(5,50)
     
     def quality(self):
         return(self._quality)
 
 class Field:
-    def __init__(self):
-        self._pickup_worker = None
-        self._dropoff_food = None
-        self._dropoff_worker = None
-        self._has_worker = False
-    
-    def set_in_worker(self):
-        pass
-
-    def set_out_worker(self):
-        pass
-
-    def set_out_food(self):
-        pass
-
-    def accident_generator(self):
-        pass
-
-    def change_hp(self):
-        pass
-
-    def produce(self):
-        pass
-
-class House:
-    def __init__(self, inRoad, inBarn, outRoad):
+    def __init__(self, inRoad, outBarn, outRoad):
         self._pickup_worker = inRoad
-        self._pick_food = inBarn
+        self._dropoff_food = outBarn
         self._dropoff_worker = outRoad
         self._has_worker = False
-        self._has_product = False
-    
+        self._worker = [] #Ny
+        self._accident = Accident_generator()
+
     def set_in_worker(self, inRoad):
-        pass
+        self._pickup_worker = inRoad
     
     def set_out_worker(self, outRoad):
-        pass
+        self._dropoff_worker = outRoad
+
+    def set_out_food(self, outBarn):
+        self._dropoff_food = outBarn
+
+    def get_worker(self):
+        worker = self._pickup_worker.remove_worker()
+        self._worker.append(worker)
+        self._has_worker = True
+
+    def produce(self):
+        #if self._has_worker:
+        if self._worker[0] != None:
+            print('field!')
+            if self._accident.accident_check():
+                hp = -0.75 * self._worker[0].health()
+                self._worker[0].change_hp(hp)
+            self._dropoff_worker.add_worker(self._worker[0])
+            self._dropoff_food.add_food()
+            self._worker.pop(0)
+            self._has_worker = False
+
+class House:
+    def __init__(self, inRoad, inStorage, outRoad):
+        """Används en product när två arbetare existerar?"""
+        self._pickup_worker = inRoad
+        self._pickup_product = inStorage
+        self._dropoff_worker = outRoad
+        self._has_worker = False
+        self._worker = [] #Ny
+        self._product = []
+
+    def set_in_worker(self, inRoad):
+        self._pickup_worker = inRoad
     
-    def set_in_food(self, inBarn):
-        pass
+    def set_out_worker(self, outRoad):
+        self._dropoff_worker = outRoad
+
+    def set_out_product(self, inStorage):
+        self._pickup_product = inStorage
     
     def _worker_check(self):
         pass
@@ -123,8 +137,20 @@ class House:
     def create_worker(self):
         pass
 
-    def execute():
-        pass
+    def execute(self):
+        self._worker.append(self._pickup_worker.remove_worker())
+        self._worker.append(self._pickup_worker.remove_worker())
+        if self._worker[1] != None:
+            for i in self._worker:
+                self._dropoff_worker.add_worker(self._worker[i])
+                self._worker.pop(i)
+            self._dropoff_worker.add_worker(Worker()) #Creates new worker
+            print('Hooray! New worker')
+        elif self._worker[0] != None:
+            self._worker[0].change_hp(20)
+            self._dropoff_worker.add_worker(self._worker[0])
+            self._worker.pop(0)
+            self._product.pop(0)
 
 class Road:
     def __init__(self):
@@ -158,9 +184,9 @@ class Worker:
         return(self._hp)
 
 class Factory:
-    def __init__(self, inRoad, outFactory, outRoad):
+    def __init__(self, inRoad, outStorage, outRoad):
         self._pickup_worker = inRoad
-        self._dropoff_product = outFactory
+        self._dropoff_product = outStorage
         self._dropoff_worker = outRoad
         self._has_worker = False
         self._worker = [] #Ny
@@ -172,8 +198,8 @@ class Factory:
     def set_out_worker(self, outRoad):
         self._dropoff_worker = outRoad
 
-    def set_out_product(self, outFactory):
-        self._dropoff_product = outFactory
+    def set_out_product(self, outStorage):
+        self._dropoff_product = outStorage
 
     def get_worker(self):
         worker = self._pickup_worker.remove_worker()
@@ -181,15 +207,20 @@ class Factory:
         self._has_worker = True
 
     def create_product(self):
-        if self._has_worker:
+        #if self._has_worker:
+        if self._worker[0] != None:
             prod = Product()
             self._dropoff_product.add_product(prod)
             if self._accident.accident_check():
                 hp = -1 * self._worker[0].health()
                 self._worker[0].change_hp(hp) #Kills worker
                 print('Worker died. #Sad')
+                self._worker.pop(0)
+                self._has_worker = False
             else:
-                self._worker[0].change_hp(-10)
+                print('Survived')
+                hp = -0.75 * self._worker[0].health()
+                self._worker[0].change_hp(hp)
                 self._dropoff_worker.add_worker(self._worker[0])
                 self._dropoff_product.add_product(prod)
                 self._worker.pop(0)
@@ -216,14 +247,39 @@ class Product:
 if __name__ == "__main__":
     r1 = Road()
     s1 = Storage()
+    b1 = Barn()
     f1 = Factory(r1,s1,r1)
+    d1 = Diner(r1,b1,r1)
+    fiel1 = Field(r1,b1,r1)
 
-    f1.set_in_worker(r1)
-    f1.set_out_worker(r1)
-    f1.set_out_product(s1)
-
-    while r1.que_length() > 0:
+    # f1.set_in_worker(r1)
+    # f1.set_out_worker(r1)
+    # f1.set_out_product(s1)
+    count = 0
+    # while r1.que_length() > 0:
+    #     f1.get_worker()
+    #     f1.create_product()
+    #     print(r1.que_length())
+    #     print(len(s1._queue))
+    #     count += 1
+    
+    while r1.que_length() > 0 and count < 1000:
+        print('---')
         f1.get_worker()
         f1.create_product()
+        d1._get_worker()
+        d1._get_food()
+        d1._feed_worker()
+        fiel1.get_worker()
+        fiel1.produce()
+        #print(r1.que_length())
+        #print(d1._worker[0].health())
+        try:
+            print(r1._queue[0].health())
+        except:
+            pass
+        print(f'barn: {len(b1._queue)}')
         print(r1.que_length())
-        #print(len(s1._queue))
+        count += 1
+    print(r1.que_length())
+    print(f'-------- count: {count} -------')
