@@ -326,7 +326,6 @@ if __name__ == "__main__":
                             if x.connections()[0] == r1:
                                 index = transitions.index(x)
                                 transitions.pop(index)
-
         print('---')
         print(f'-------- count: {count} -------')
         print(f'transitioner--{len(transitions)}')
