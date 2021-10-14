@@ -4,7 +4,7 @@ import time
 class Accident_generator:
     def accident_check(self):
         accident = random.randint(1,10)
-        return(accident > 7)
+        return(accident > 6)
 
 class Diner:
     def __init__(self, inRoad, inBarn, outRoad):
@@ -15,7 +15,7 @@ class Diner:
         #self._has_food = False
         self._worker = []
         self._food = []
-        self._prio = False
+        self._prio = True
     
     def set_in_worker(self, inRoad):
         self._pickup_worker = inRoad
@@ -49,16 +49,16 @@ class Diner:
 
 class Barn:
     def __init__(self):
-        self._queue = [Food() for _ in range(10000)]
-        #self._queue = []
+        #self._queue = [Food() for _ in range(100)]
+        self._queue = []
     
     def add_food(self):
-        x = random.randint(1,1000)
-        if x > 500:
-            for _ in range(2):
-                self._queue.append(Food())
-        #else:
-        #    self._queue.append(Food())
+        # x = random.randint(1,1000)
+        # if x > 600:
+        #     for _ in range(2):
+        #         self._queue.append(Food())
+        # else:
+        self._queue.append(Food())
 
     def remove_food(self):
         try:
@@ -104,8 +104,10 @@ class Field:
             if self._accident.accident_check():
                 hp = -0.65 * self._worker[0].health()
                 self._worker[0].change_hp(hp)
+            else:
+                self._dropoff_food.add_food()
             self._dropoff_worker.add_worker(self._worker[0])
-            self._dropoff_food.add_food()
+            #self._dropoff_food.add_food()
             self._worker.pop(0)
             self._has_worker = False
 
@@ -156,7 +158,7 @@ class House:
 
 class Road:
     def __init__(self):
-        self._queue = [Worker() for _ in range(10000)]
+        self._queue = [Worker() for _ in range(100)]
         #self._queue = []
 
     def remove_worker(self):
@@ -230,8 +232,8 @@ class Factory:
 
 class Storage:
     def __init__(self):
-        self._queue = [Product() for _ in range(10000)]
-        #self._queue = []
+        #self._queue = [Product() for _ in range(100)]
+        self._queue = []
 
     def add_product(self, product):
         # x = random.randint(500,1000)
@@ -263,7 +265,9 @@ class Government:
 if __name__ == "__main__":
     r1 = Road()
     r2 = Road()
+    r3 = Road()
     s1 = Storage()
+    s2 = Storage()
     b1 = Barn()
     b2 = Barn()
 
@@ -274,8 +278,8 @@ if __name__ == "__main__":
     #     b1.add_food()
     #     b2.add_food()
     
-    roads = [r1,r2]
-    storages = [s1]
+    roads = [r1,r2,r3]
+    storages = [s1,s2]
     barns = [b1, b2]
 
     f1 = Factory(r1,s1,r1)
@@ -290,7 +294,8 @@ if __name__ == "__main__":
     h3 = House(r2,s1,r2)
     h4 = House(r2,s1,r1)
 
-    transitions = [f1,h1,f2,d1,d2,h2,d3,fiel1,h3,fiel2,h4]
+    #transitions = [f1,h1,f2,d1,d2,h2,d3,fiel1,h3,fiel2,h4]
+    transitions = []
 
     count = 0
     # while r1.que_length() > 0 or r2.que_length() > 0:
@@ -304,7 +309,8 @@ if __name__ == "__main__":
     #run = True
 
     while r1.que_length() > 0 or r2.que_length() > 0: #and run == True:
-        #time.sleep(2)
+        # if count % 100 == 0:
+        #     time.sleep(2)
         for t in transitions:
             t.action()
             # if t.action() == False:
@@ -321,10 +327,10 @@ if __name__ == "__main__":
         minStorage = storages[0]
         maxStorage = storages[0]
         for i in storages:
-            if i.que_length() >= maxSaldoStorage:
+            if i.que_length() > maxSaldoStorage:
                 maxSaldoStorage = i.que_length()
                 maxStorage = i
-            elif i.que_length() < minSaldoStorage:
+            elif i.que_length() <= minSaldoStorage:
                 minSaldoStorage = i.que_length()
                 minStorage = i
 
@@ -333,10 +339,10 @@ if __name__ == "__main__":
         minBarn = barns[0]
         maxBarn = barns[0]
         for i in barns:
-            if i.que_length() >= maxSaldoBarn:
+            if i.que_length() > maxSaldoBarn:
                 maxSaldoBarn = i.que_length()
                 maxBarn = i
-            elif i.que_length() < minSaldoBarn:
+            elif i.que_length() <= minSaldoBarn:
                 minSaldoBarn = i.que_length()
                 minBarn = i
 
@@ -345,20 +351,21 @@ if __name__ == "__main__":
         minRoad = roads[0]
         maxRoad = roads[0]
         for i in roads:
-            if i.que_length() >= maxSaldoRoad:
+            if i.que_length() > maxSaldoRoad:
                 maxSaldoRoad = i.que_length()
                 maxRoad = i
-            elif i.que_length() < minSaldoRoad:
+            elif i.que_length() <= minSaldoRoad:
                 minSaldoRoad = i.que_length()
                 minRoad = i
 
         for i in roads:
             if i.que_length() < 3000:
-                #transitions.append(House(r1,maxStorage,r1))
+                transitions.append(House(i,maxStorage,i))
                 for x in transitions:
                         if type(x).__name__ == 'House':
                             if x.connections()[2] == i:
                                 x.change_priority(True)
+                        #transitions.append(House(i,maxStorage,i))
             elif i.que_length() > 10000:
                 # if minSaldoStorage <= 1000:
                 #     transitions.append(Factory(i,minStorage,i))
@@ -366,34 +373,44 @@ if __name__ == "__main__":
                 for x in transitions:
                     if type(x).__name__ == 'House':
                         if x.connections()[2] == i:
-                            #index = transitions.index(x)
-                            #transitions.pop(index)
+                            # index = transitions.index(x)
+                            # transitions.pop(index)
                             x.change_priority(False)
         
         for i in barns:
-            if i.que_length() < 3000:
+            if i.que_length() < 30:
+                transitions.append(Field(maxRoad,i,minRoad))
+                # for x in transitions:
+                #         if type(x).__name__ == 'Diner':
+                #             if x.connections()[1] == i:
+                #                 index = transitions.index(x)
+                #                 transitions.pop(index)
+                                #x.change_priority(False)
+            elif i.que_length() > 300:
+                transitions.append(Diner(minRoad,i,minRoad))
                 for x in transitions:
-                        if type(x).__name__ == 'Diner':
+                        if type(x).__name__ == 'Field':
                             if x.connections()[1] == i:
-                                x.change_priority(False)
-            elif i.que_length() > 5000:
-                for x in transitions:
-                        if type(x).__name__ == 'Diner':
-                            if x.connections()[1] == i:
-                                x.change_priority(True)
+                                index = transitions.index(x)
+                                transitions.pop(index)
+                                #x.change_priority(True)
 
         for i in storages:
-            if i.que_length() < 3000:
+            if i.que_length() < 30:
                 transitions.append(Factory(maxRoad,i,minRoad))
-            elif i.que_length() > 15000:
+            elif i.que_length() > 300:
                 for x in transitions:
                         if type(x).__name__ == 'Factory':
                             if x.connections()[1] == i:
                                 index = transitions.index(x)
                                 transitions.pop(index)
         # print('---')
-        # print(f'-------- count: {count} -------')
+        x = []
+        #print(f'-------- count: {count} -------')
         print(f'transitioner--{len(transitions)}')
+        for i in transitions:
+            x.append(type(i).__name__)
+        print(set(x))
         #outputNames = [type(transitions[i]).__name__ for i in range(len(transitions))]
         #print(outputNames)
-        print(f'r1:{r1.que_length()}, r2:{r2.que_length()}, s1:{s1.que_length()}, b1:{b1.que_length()}, b2:{b2.que_length()}')
+        print(f'r1:{r1.que_length()}, r2:{r2.que_length()}, r3:{r3.que_length()}, s1:{s1.que_length()}, s2:{s2.que_length()}, b1:{b1.que_length()}, b2:{b2.que_length()}')
