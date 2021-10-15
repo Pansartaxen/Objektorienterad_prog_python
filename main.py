@@ -4,7 +4,7 @@ import time
 class Accident_generator:
     def accident_check(self):
         accident = random.randint(1,10)
-        return(accident > 6)
+        return(accident > 5)
 
 class Diner:
     def __init__(self, inRoad, inBarn, outRoad):
@@ -102,12 +102,11 @@ class Field:
         #if self._has_worker:
         if self._worker[0] != None:
             if self._accident.accident_check():
-                hp = -0.65 * self._worker[0].health()
+                hp = -0.75 * self._worker[0].health()
                 self._worker[0].change_hp(hp)
             else:
                 self._dropoff_food.add_food()
             self._dropoff_worker.add_worker(self._worker[0])
-            #self._dropoff_food.add_food()
             self._worker.pop(0)
             self._has_worker = False
 
@@ -116,7 +115,7 @@ class House:
         self._pickup_worker = inRoad
         self._pickup_product = inStorage
         self._dropoff_worker = outRoad
-        self._create_worker = False
+        self._create_worker = True
         self._worker = [] #Ny
         self._product = []
 
@@ -158,7 +157,7 @@ class House:
 
 class Road:
     def __init__(self):
-        self._queue = [Worker() for _ in range(100)]
+        self._queue = [Worker() for _ in range(2)]
         #self._queue = []
 
     def remove_worker(self):
@@ -167,8 +166,17 @@ class Road:
         except:
             return(None)
 
+    def catastrophe(self):
+        x = random.randint(1,1000)
+        y == int((len(self._queue))//10)
+        if x == 4:
+            self._queue = self._queue[0:5]
+            #print('x-x-x-x-x-x-x-x-x-x-x-x-x-x-x')
+
+
     def add_worker(self, worker):
-        worker.change_hp(-((len(self._queue)))/1000)
+        self.catastrophe()
+        worker.change_hp(-((len(self._queue)))/10)
         if worker.is_alive():
             self._queue.append(worker)
     
@@ -196,7 +204,7 @@ class Factory:
         #self._has_worker = False
         self._worker = [] #Ny
         self._accident = Accident_generator()
-        self._damage = random.randint(-40,-10)
+        self._damage = random.randint(-30,-10)
 
     def set_in_worker(self, inRoad):
         self._pickup_worker = inRoad
@@ -280,7 +288,7 @@ if __name__ == "__main__":
     
     roads = [r1,r2,r3]
     storages = [s1,s2]
-    barns = [b1, b2]
+    barns = [b1,b2]
 
     f1 = Factory(r1,s1,r1)
     f2 = Factory(r2,s1,r2)
@@ -310,19 +318,11 @@ if __name__ == "__main__":
 
     while r1.que_length() > 0 or r2.que_length() > 0: #and run == True:
         #input('x-x-x-x-x-x-x-x-x-x-x-x Tryck enter förr att köra 200 rundor x-x-x-x-x-x-x-x-x-x-x-x')
-        for _ in range(20000000000):
-            if count % 100 == 0:
-                time.sleep(2)
+        time.sleep(0.05)
+        for _ in range(1):
             for t in transitions:
                 t.action()
-                # if t.action() == False:
-                #     run = False
                 count += 1
-
-                #print('---')
-                #print(h1._create_worker,h2._create_worker,h3._create_worker,h4._create_worker)
-            #print(d1._prio,d2._prio)
-                #print(f'-------- count: {count} -------')
             
             minSaldoStorage = 0
             maxSaldoStorage = 0
@@ -361,35 +361,34 @@ if __name__ == "__main__":
                     minRoad = i
 
             for i in roads:
-                if i.que_length() < 300:
+                if i.que_length() <= 100:
                     transitions.append(House(i,maxStorage,i))
-                    for x in transitions:
-                            if type(x).__name__ == 'House':
-                                if x.connections()[2] == i:
-                                    x.change_priority(True)
+                    # for x in transitions:
+                    #         if type(x).__name__ == 'House':
+                    #             if x.connections()[2] == i:
+                    #                 x.change_priority(True)
                             #transitions.append(House(i,maxStorage,i))
-                elif i.que_length() > 10000:
-                    # if minSaldoStorage <= 1000:
-                    #     transitions.append(Factory(i,minStorage,i))
-                    # elif minSaldoStorage > 1000:
+                elif i.que_length() > 100:
                     for x in transitions:
                         if type(x).__name__ == 'House':
                             if x.connections()[2] == i:
                                 index = transitions.index(x)
                                 transitions.pop(index)
                                 break
+                            #break
+                        #break
                                 #x.change_priority(False)
             
             for i in barns:
-                if i.que_length() < 30:
+                if i.que_length() <= 25:
                     transitions.append(Field(maxRoad,i,minRoad))
-                    # for x in transitions:
-                    #         if type(x).__name__ == 'Diner':
-                    #             if x.connections()[1] == i:
-                    #                 index = transitions.index(x)
-                    #                 transitions.pop(index)
+                    for x in transitions:
+                            if type(x).__name__ == 'Diner':
+                                if x.connections()[1] == i:
+                                    index = transitions.index(x)
+                                    transitions.pop(index)
                                     #x.change_priority(False)
-                elif i.que_length() > 300:
+                elif i.que_length() > 25:
                     transitions.append(Diner(minRoad,i,minRoad))
                     for x in transitions:
                             if type(x).__name__ == 'Field':
@@ -399,22 +398,28 @@ if __name__ == "__main__":
                                     #x.change_priority(True)
 
             for i in storages:
-                if i.que_length() < 50:
+                if i.que_length() <= 25:
                     transitions.append(Factory(maxRoad,i,minRoad))
-                elif i.que_length() > 500:
+                elif i.que_length() > 25:
                     for x in transitions:
                             if type(x).__name__ == 'Factory':
                                 if x.connections()[1] == i:
                                     index = transitions.index(x)
                                     transitions.pop(index)
                                     break
-            # print('---')
+
             x = []
-            #print(f'-------- count: {count} -------')
-            print(f'-----------------------------------------------------------transitioner--{len(transitions)}')
+            output = f'||    Rundor: {count:<4}    ||'
+            #print(f'-------- Rundor: {count} -------')
+            #print(f'-----------------------------------------------------------transitioner--{len(transitions)}')
+            output += f'    transitioner: {len(transitions):<4}'
             for i in transitions:
                 x.append(type(i).__name__)
-            print('----------------------------------------------------------------------------------------',set(x))
-            #outputNames = [type(transitions[i]).__name__ for i in range(len(transitions))]
-            #print(outputNames)
-            print(f'r1:{r1.que_length()}, r2:{r2.que_length()}, r3:{r3.que_length()}, s1:{s1.que_length()}, s2:{s2.que_length()}, b1:{b1.que_length()}, b2:{b2.que_length()}')
+            #print('----------------------------------------------------------------------------------------',set(x))
+            #output += f'--{set(x)}'
+            y = ''
+            output +=f' ||   r1:{r1.que_length():<3} r2:{r2.que_length():<3} r3:{r3.que_length():<3} s1:{s1.que_length():<3} s2:{s2.que_length():<3} b1:{b1.que_length():<3} b2:{b2.que_length():<2}'
+            output += f'{y:<4}||    {set(x)}'
+            output += f'{y:<15}||'
+            print(output)
+    print('Alla dog :´(')
