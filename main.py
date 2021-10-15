@@ -309,108 +309,112 @@ if __name__ == "__main__":
     #run = True
 
     while r1.que_length() > 0 or r2.que_length() > 0: #and run == True:
-        # if count % 100 == 0:
-        #     time.sleep(2)
-        for t in transitions:
-            t.action()
-            # if t.action() == False:
-            #     run = False
-            count += 1
+        #input('x-x-x-x-x-x-x-x-x-x-x-x Tryck enter förr att köra 200 rundor x-x-x-x-x-x-x-x-x-x-x-x')
+        for _ in range(20000000000):
+            if count % 100 == 0:
+                time.sleep(2)
+            for t in transitions:
+                t.action()
+                # if t.action() == False:
+                #     run = False
+                count += 1
 
-            #print('---')
-            #print(h1._create_worker,h2._create_worker,h3._create_worker,h4._create_worker)
-        #print(d1._prio,d2._prio)
-            #print(f'-------- count: {count} -------')
-        
-        minSaldoStorage = 0
-        maxSaldoStorage = 0
-        minStorage = storages[0]
-        maxStorage = storages[0]
-        for i in storages:
-            if i.que_length() > maxSaldoStorage:
-                maxSaldoStorage = i.que_length()
-                maxStorage = i
-            elif i.que_length() <= minSaldoStorage:
-                minSaldoStorage = i.que_length()
-                minStorage = i
+                #print('---')
+                #print(h1._create_worker,h2._create_worker,h3._create_worker,h4._create_worker)
+            #print(d1._prio,d2._prio)
+                #print(f'-------- count: {count} -------')
+            
+            minSaldoStorage = 0
+            maxSaldoStorage = 0
+            minStorage = storages[0]
+            maxStorage = storages[0]
+            for i in storages:
+                if i.que_length() > maxSaldoStorage:
+                    maxSaldoStorage = i.que_length()
+                    maxStorage = i
+                elif i.que_length() <= minSaldoStorage:
+                    minSaldoStorage = i.que_length()
+                    minStorage = i
 
-        minSaldoBarn = 0
-        maxSaldoBarn = 0
-        minBarn = barns[0]
-        maxBarn = barns[0]
-        for i in barns:
-            if i.que_length() > maxSaldoBarn:
-                maxSaldoBarn = i.que_length()
-                maxBarn = i
-            elif i.que_length() <= minSaldoBarn:
-                minSaldoBarn = i.que_length()
-                minBarn = i
+            minSaldoBarn = 0
+            maxSaldoBarn = 0
+            minBarn = barns[0]
+            maxBarn = barns[0]
+            for i in barns:
+                if i.que_length() > maxSaldoBarn:
+                    maxSaldoBarn = i.que_length()
+                    maxBarn = i
+                elif i.que_length() <= minSaldoBarn:
+                    minSaldoBarn = i.que_length()
+                    minBarn = i
 
-        minSaldoRoad = 0
-        maxSaldoRoad = 0
-        minRoad = roads[0]
-        maxRoad = roads[0]
-        for i in roads:
-            if i.que_length() > maxSaldoRoad:
-                maxSaldoRoad = i.que_length()
-                maxRoad = i
-            elif i.que_length() <= minSaldoRoad:
-                minSaldoRoad = i.que_length()
-                minRoad = i
+            minSaldoRoad = 0
+            maxSaldoRoad = 0
+            minRoad = roads[0]
+            maxRoad = roads[0]
+            for i in roads:
+                if i.que_length() > maxSaldoRoad:
+                    maxSaldoRoad = i.que_length()
+                    maxRoad = i
+                elif i.que_length() <= minSaldoRoad:
+                    minSaldoRoad = i.que_length()
+                    minRoad = i
 
-        for i in roads:
-            if i.que_length() < 3000:
-                transitions.append(House(i,maxStorage,i))
-                for x in transitions:
+            for i in roads:
+                if i.que_length() < 300:
+                    transitions.append(House(i,maxStorage,i))
+                    for x in transitions:
+                            if type(x).__name__ == 'House':
+                                if x.connections()[2] == i:
+                                    x.change_priority(True)
+                            #transitions.append(House(i,maxStorage,i))
+                elif i.que_length() > 10000:
+                    # if minSaldoStorage <= 1000:
+                    #     transitions.append(Factory(i,minStorage,i))
+                    # elif minSaldoStorage > 1000:
+                    for x in transitions:
                         if type(x).__name__ == 'House':
                             if x.connections()[2] == i:
-                                x.change_priority(True)
-                        #transitions.append(House(i,maxStorage,i))
-            elif i.que_length() > 10000:
-                # if minSaldoStorage <= 1000:
-                #     transitions.append(Factory(i,minStorage,i))
-                # elif minSaldoStorage > 1000:
-                for x in transitions:
-                    if type(x).__name__ == 'House':
-                        if x.connections()[2] == i:
-                            # index = transitions.index(x)
-                            # transitions.pop(index)
-                            x.change_priority(False)
-        
-        for i in barns:
-            if i.que_length() < 30:
-                transitions.append(Field(maxRoad,i,minRoad))
-                # for x in transitions:
-                #         if type(x).__name__ == 'Diner':
-                #             if x.connections()[1] == i:
-                #                 index = transitions.index(x)
-                #                 transitions.pop(index)
+                                index = transitions.index(x)
+                                transitions.pop(index)
+                                break
                                 #x.change_priority(False)
-            elif i.que_length() > 300:
-                transitions.append(Diner(minRoad,i,minRoad))
-                for x in transitions:
-                        if type(x).__name__ == 'Field':
-                            if x.connections()[1] == i:
-                                index = transitions.index(x)
-                                transitions.pop(index)
-                                #x.change_priority(True)
+            
+            for i in barns:
+                if i.que_length() < 30:
+                    transitions.append(Field(maxRoad,i,minRoad))
+                    # for x in transitions:
+                    #         if type(x).__name__ == 'Diner':
+                    #             if x.connections()[1] == i:
+                    #                 index = transitions.index(x)
+                    #                 transitions.pop(index)
+                                    #x.change_priority(False)
+                elif i.que_length() > 300:
+                    transitions.append(Diner(minRoad,i,minRoad))
+                    for x in transitions:
+                            if type(x).__name__ == 'Field':
+                                if x.connections()[1] == i:
+                                    index = transitions.index(x)
+                                    transitions.pop(index)
+                                    #x.change_priority(True)
 
-        for i in storages:
-            if i.que_length() < 30:
-                transitions.append(Factory(maxRoad,i,minRoad))
-            elif i.que_length() > 300:
-                for x in transitions:
-                        if type(x).__name__ == 'Factory':
-                            if x.connections()[1] == i:
-                                index = transitions.index(x)
-                                transitions.pop(index)
-        # print('---')
-        x = []
-        #print(f'-------- count: {count} -------')
-        print(f'transitioner--{len(transitions)}')
-        for i in transitions:
-            x.append(type(i).__name__)
-        print(set(x))
-        #outputNames = [type(transitions[i]).__name__ for i in range(len(transitions))]
-        #print(outputNames)
-        print(f'r1:{r1.que_length()}, r2:{r2.que_length()}, r3:{r3.que_length()}, s1:{s1.que_length()}, s2:{s2.que_length()}, b1:{b1.que_length()}, b2:{b2.que_length()}')
+            for i in storages:
+                if i.que_length() < 50:
+                    transitions.append(Factory(maxRoad,i,minRoad))
+                elif i.que_length() > 500:
+                    for x in transitions:
+                            if type(x).__name__ == 'Factory':
+                                if x.connections()[1] == i:
+                                    index = transitions.index(x)
+                                    transitions.pop(index)
+                                    break
+            # print('---')
+            x = []
+            #print(f'-------- count: {count} -------')
+            print(f'-----------------------------------------------------------transitioner--{len(transitions)}')
+            for i in transitions:
+                x.append(type(i).__name__)
+            print('----------------------------------------------------------------------------------------',set(x))
+            #outputNames = [type(transitions[i]).__name__ for i in range(len(transitions))]
+            #print(outputNames)
+            print(f'r1:{r1.que_length()}, r2:{r2.que_length()}, r3:{r3.que_length()}, s1:{s1.que_length()}, s2:{s2.que_length()}, b1:{b1.que_length()}, b2:{b2.que_length()}')
