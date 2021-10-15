@@ -1,334 +1,82 @@
-#Marius Stokkedal
-import random
-class Accident_generator:
-    def accident_check(self):
-        accident = random.randint(1,10)
-        return(accident > 6)
+Bakgrund
+För att studera flöden vill vi göra en simulering av en liten miniatyrvärld. Världen består av arbetare som jobbar, äter, sover och förökar sig. De bor i en värld av fabriker, åkrar, restauranger och hus.
 
-class Diner:
-    def __init__(self, inRoad, inBarn, outRoad):
-        self._pickup_worker = inRoad
-        self._pickup_food = inBarn
-        self._dropoff_worker = outRoad
-        #self._has_worker = False
-        #self._has_food = False
-        self._worker = []
-        self._food = []
-    
-    def set_in_worker(self, inRoad):
-        self._pickup_worker = inRoad
-    
-    def set_out_worker(self, outRoad):
-        self._dropoff_worker = outRoad
-    
-    def set_in_food(self, inBarn):
-        self._pickup_food = inBarn
+Petrinät
+I simuleringen används en modifierad version av s.k. petrinät. Utan att fördjupa oss i dessa nät kan man nämna att petrinät är ett grafiskt och matematiskt modelleringsverktyg utvecklat av Carl Petri 1962. Näten består av platser (places),  övergångar (transitions) samt inkanaler och utkanaler (arcs) som förbinder platser och övergångar. På dessa nät flödar resurser (tokens). I platserna lagras eventuella resurser i väntan på att de behövs i en övergång. Övergångar hämtar en eller flera resurser på inkanaler från en eller flera platser. Dessa resurser behandlas sedan på ett bestämt sätt av övergången. Antingen förbrukas eller skickass resurser vidare eller så kan nya resurser skapas. De resurser som blir resultatet i en övergång skickas via utkanaler till en eller flera platser. En övergång kan enbart hämta och behandla resurser om samtliga resurser den kräver finns tillgängliga via övergångens inkanaler. 
 
-    def connections(self):
-        return([self._pickup_worker,self._pickup_food,self._dropoff_worker])
+I bilderna nedan visas två exempel där petrinät styr trafikljus. Respektive lampa lyser när det finns en resurs i motsvarande plats. I det vänstra exemplet lyser alltså trafikljuset rött. Den övergång som kan agera är rg som alltså kan ta den enda resursen från platsen red och skicka den vidare till platsen green. I det högra exemplet styrs nu två trafikljus där de inte ska kunna bli gröna samtidigt. I detta fall lyser båda ljusen röda. Övergången yr1 har precis tagit en resurs från yellow1 och lagt var sin resurs i red1 och x1. Den enda övergång som kan agera nu är rg2. Övergången rg2 kan ta resurser från x1 och red2 och lägga en resurs i green2.
 
-    def action(self):
-        self._worker.append(self._pickup_worker.remove_worker())
-        self._food.append(self._pickup_food.remove_food())
-        #if self._has_worker:
-        if self._worker[0] != None and self._food[0] != None:
-        #if self._has_food and self._has_worker:
-            quality = self._food[0].quality()
-            self._worker[0].change_hp(quality)
-            self._dropoff_worker.add_worker(self._worker[0])
-            self._worker.pop(0)
-            self._food.pop(0)
-            self._has_worker = False
-            self._has_food = False
+TrafficLight.png
 
-class Barn:
-    def __init__(self):
-        #self._queue = [Food() for _ in range(100)]
-        self._queue = []
-    
-    def add_food(self):
-        x = random.randint(1,1000)
-        if x > 500:
-            for _ in range(2):
-                self._queue.append(Food())
-        #self._queue.append(Food())
+I näten gäller alltså följande egenskaper:
 
-    def remove_food(self):
-        try:
-            return(self._queue.pop(0))
-        except:
-            return(None)
-    
-    def que_length(self):
-        return(len(self._queue))
+Det är övergångarna som styr simuleringen så tillvida att det är dem som kollar och förändrar tillståndet hos de andra komponenterna (platser och resurser).  Resurser och platser har alltså ingen egen vilja utan resurser plockas från platser i den ordning som resurser efterfrågas av övergångar.
+Varje övergång arbetar autonomt, dvs den känner inte till något om världen förutom den information den kan få från kopplade platser via inkanaler.
+En övergång kan enbart utföra sin uppgift om den får tillgång till samtliga resurser som krävs, annars hoppar den över en omgång och testar igen senare. En övergång måste alltså ha möjlighet att fråga en plats om tillgängliga resurser innan den hämtar resurser.
+SimSims-världen
+Resurser
+Resurser flödar på nätet. Nya resurser kan skapas och försvinner främst i övergångarna. I denna simulering finns tre olika typer av resurser.
 
-class Food:
-    def __init__(self):
-        self._quality = random.randint(-15,15)
-    
-    def quality(self):
-        return(self._quality)
+Arbetarna är navet i simuleringen. De är dessa som producerar och förbrukar varor och mat, bor i husen och förökar sig. Livet tar dock på en arbetare som när hen skapats har denne 100% i livskraft men dör (tas bort från simuleringen) när hen kommer ned till 0%.
 
-class Field:
-    def __init__(self, inRoad, outBarn, outRoad):
-        self._pickup_worker = inRoad
-        self._dropoff_food = outBarn
-        self._dropoff_worker = outRoad
-        #self._has_worker = False
-        self._worker = [] #Ny
-        self._accident = Accident_generator()
+SimSimsWorker.png
 
-    def set_in_worker(self, inRoad):
-        self._pickup_worker = inRoad
-    
-    def set_out_worker(self, outRoad):
-        self._dropoff_worker = outRoad
+Mat produceras i åkernoder och äts av arbetare. Mat kan ha olika kvalitet.
 
-    def set_out_food(self, outBarn):
-        self._dropoff_food = outBarn
+SimSimsFood.png
 
-    def connections(self):
-        return([self._pickup_worker,self._dropoff_food,self._dropoff_worker])
+Produkter produceras i fabriksnoder och förbrukas av arbetare. Produkterna har i sig inga egenskaper (men skulle kunna ha).
 
-    def action(self):
-        self._worker.append(self._pickup_worker.remove_worker())
-        #if self._has_worker:
-        if self._worker[0] != None:
-            if self._accident.accident_check():
-                hp = -0.75 * self._worker[0].health()
-                self._worker[0].change_hp(hp)
-            self._dropoff_worker.add_worker(self._worker[0])
-            self._dropoff_food.add_food()
-            self._worker.pop(0)
-            self._has_worker = False
+SimSimsProduct.png
 
-class House:
-    def __init__(self, inRoad, inStorage, outRoad):
-        """Används en product när två arbetare existerar?"""
-        self._pickup_worker = inRoad
-        self._pickup_product = inStorage
-        self._dropoff_worker = outRoad
-        #self._has_worker = False
-        self._worker = [] #Ny
-        self._product = []
+Platser (Places)
+I platser väntar resurser i väntan på att de efterfrågas i någon övergång. Till platserna kan ett obegränsat antal inkanaler och utkanaler kopplas. Respektive plats kan enbart lagra resurser av en bestämd typ.
 
-    def set_in_worker(self, inRoad):
-        self._pickup_worker = inRoad
-    
-    def set_out_worker(self, outRoad):
-        self._dropoff_worker = outRoad
+Vägar (Roads) kallas de noder där arbetare väntar. Att vara ute på vägarna gillar inte arbetare då där bildas köer. Ju längre kön är desto mer känner de hur livskraften rinner ur dem. Väar ska fungera som en abstrakt datatyp kö för arbetare, de är alltså en FIFO - först in, först ut.
 
-    def set_out_product(self, inStorage):
-        self._pickup_product = inStorage
+Kommentar: För att förenkla kan man tänka sig att en arbetare förlorar livskraft i och med att denne ska läggs till i platsen, ju fler som redan finns på vägen (platsen) desto mer minskar arbetarens livskraft. Om arbetaren då dör läggs den inte till i platsen utan försvinner ur nätet. 
 
-    def connections(self):
-        return([self._pickup_worker,self._pickup_product,self._dropoff_worker])
+SimSimsRoad.png
 
-    def action(self):
-        self._worker.append(self._pickup_worker.remove_worker())
-        self._worker.append(self._pickup_worker.remove_worker())
-        self._product.append(self._pickup_product.remove_product())
-        if self._worker[0] and self._worker[1] != None:
-            for i in range(len(self._worker)):
-                self._dropoff_worker.add_worker(self._worker[i])
-            self._worker = []
-            self._dropoff_worker.add_worker(Worker()) #Creates new worker
-            #print('Hooray! New worker')
-        elif self._worker[0] != None:
-            self._worker[0].change_hp(20)
-            self._dropoff_worker.add_worker(self._worker[0])
-            self._worker.pop(0)
-            self._product.pop(0)
+Lador (Barns) lagrar mat. Mat förbrukas i form av en kö (FIFO - först in, först ut).
 
-class Road:
-    def __init__(self):
-        #self._queue = [Worker() for _ in range(100)]
-        self._queue = []
+SimSimsBarn.png
 
-    def remove_worker(self):
-        try:
-            return(self._queue.pop(0))
-        except:
-            return(None)
+Lager (Storage) lagrar produkter. Produkter förbrukas i form av en stack (LIFO - sist in, först ut ut).
 
-    def add_worker(self, worker):
-        worker.change_hp(-((len(self._queue))))
-        if worker.is_alive():
-            self._queue.append(worker)
-    
-    def que_length(self):
-        return(len(self._queue))
+SimSimsStorage.png
 
-class Worker:
-    def __init__(self):
-        self._hp = 100
-    
-    def change_hp(self, change):
-        self._hp += change
+Övergångar (Transitions)
+Övergångar har ett fixt antal inkanaler. Via inkanalerna bevakar övergångar de platser som övergången är kopplad till. När dessa platser har de resurser som krävs hämtas de in till övergången. Väl inne i övergången sker den process som respektive övergång är konstruerad för. När övergången är klar skickar den eventuella resurser till en eller flera kopplade platser. Det finns fyra olika typer av övergångar.
 
-    def is_alive(self):
-        return(self._hp > 0)
+Fabriker producerar produkter av en arbetare. Livet i fabriken är inte heller en dans på rosor utan skadligt och farligt. Medan arbetaren befinner sig i fabriken minskas dennes livskraft vilket också kan variera mellan olika fabriker. Rätt vad det är kan också olyckor ske där den arme arbetaren dödas. Input till en fabrik är en arbetare och output är en produkt och en arbetare (om denne överlevt).
 
-    def health(self):
-        return(self._hp)
+SimSimsFactory.png
 
-class Factory:
-    def __init__(self, inRoad, outStorage, outRoad):
-        self._pickup_worker = inRoad
-        self._dropoff_product = outStorage
-        self._dropoff_worker = outRoad
-        #self._has_worker = False
-        self._worker = [] #Ny
-        self._accident = Accident_generator()
-        self._damage = random.randint(-40,-10)
+Åkrar producerar den mat som arbetarna behöver. Arbetet på åkern tar inte på livskraften men är inte riskfritt. Olyckor kan ske som förbrukar livskraft. Input till en åker är en arbetare och output är en enhet mat och en arbetare (om denne överlevt).
 
-    def set_in_worker(self, inRoad):
-        self._pickup_worker = inRoad
-    
-    def set_out_worker(self, outRoad):
-        self._dropoff_worker = outRoad
+SimSimsField.png
 
-    def set_out_product(self, outStorage):
-        self._dropoff_product = outStorage
+Matsalar används för att ge arbetarna mat efter hårt arbete. De känner hur livskraften återställs en smula medan de smaskar på en bit mat. Kvaliteten på maten kan skilja något vilket gör att livskraften inte återställs lika mycket vid varje besök i en matsal. Är kvaliteten riktigt dålig finns i stället risk för matförgiftning vilket istället minskar livskraften. Input till en matsal är en arbetare och en enhet mat och output är en arbetare (om denne överlevt).
 
-    def connections(self):
-        return([self._pickup_worker,self._dropoff_product,self._dropoff_worker])
+SimSimsRefectory.png
 
-    def action(self):
-        #if self._has_worker:
-        self._worker.append(self._pickup_worker.remove_worker())
-        if self._worker[0] != None:
-            prod = Product()
-            self._dropoff_product.add_product(prod)
-            if self._accident.accident_check():
-                hp = -1 * self._worker[0].health()
-                self._worker[0].change_hp(hp) #Kills worker
-                print('Worker died. #Sad')
-                self._worker.pop(0)
-                #self._has_worker = False
-            else:
-                #hp = -0.75 * self._worker[0].health()
-                self._worker[0].change_hp(self._damage)
-                self._dropoff_worker.add_worker(self._worker[0])
-                self._dropoff_product.add_product(prod)
-                self._worker.pop(0)
-                #self._has_worker = False
+Hus. Hem ljuva hem. Hemma i husen tar man igen sig och har skoj mellan lakanen. Är en arbetare ensam i huset tar denne enbart igen sig och vilar en stund medan dennes livskraft ökar en smula. Kommer det in två arbetare samtidigt finns det däremot ingen tid till vila och livskraften ökar inte, däremot blir de tu tre. Vid varje besök av en eller två arbetare förbrukas en produkt. Input till ett hus är en eller två arbetare samt en produkt och output är en till tre arbetare. Observera att en huset i förväg måste ha bestämt sig (viktad slump) för om det vill ha en eller två arbetare vid varje iteration i sumuleringen. Huset kan inte vänta på ytterligare arbetare utan båda måste i så fall komma in i huset samtidigt som produkten,annars sker inget.
 
-class Storage:
-    def __init__(self):
-        #self._queue = [Product() for _ in range(100)]
-        self._queue = []
+SimSimsHouse1.png
 
-    def add_product(self, product):
-        x = random.randint(500,1000)
-        if x > 400:
-            for _ in range(2):
-                self._queue.append(product)
+SimSimsHouse2.png
 
-    def remove_product(self):
-        try:
-            return(self._queue.pop(-1))
-        except:
-            return(None)
+Kanaler
+In- och utkanaler är de kopplingar som finns mellan platser och övergångar. Varje övergång har minst en in- respektive utkanal som kopplar den till en eller flera platser. Det samma gäller för platser. Kanalerna har själva inga förmågor, och egenskaper är begränsade till vilken plats eller övergång de kopplar till. I en objektorienterad design är de därför tämligen ointressanta. Om en övergång håller reda på vilka platser den ska hämta resurser från och vilka platser den ska lämna resurser till så räcker detta. Platserna behöver inte vet vilka övergångar den är kopplad till.
 
-    def que_length(self):
-        return(len(self._queue))
+Simulering
+Man börjar med att bygga upp ett simuleringsnät där platser och övergångar kopplas samman. Flera olika komponenter av samma sort kan (ska) användas till att bygga stora nät. Resurser kan initialt enbart läggas i platserna. Efter att ett nät är byggt kan simuleringen börja och den fortsätter så länge som det finns arbetare kvar i nätet. Nedan visas ett exempel där det finns ett lager, två vägar, två lador, två fabriker, två fält, tre matsalar, och fyra hus. Du kan välja att bygga upp nätet hur du vill (eller adaptivt som utökning)
 
-class Product:
-    def __init__(self):
-        pass
+SimSimsNet.png
 
+ 
 
-if __name__ == "__main__":
-    r1 = Road()
-    r2 = Road()
-    s1 = Storage()
-    b1 = Barn()
-    b2 = Barn()
-
-    for _ in range(100):
-        r1.add_worker(Worker())
-        r2.add_worker(Worker())
-        s1.add_product(Product())
-        b1.add_food()
-        b2.add_food()
-    
-    roads = [r1,r2]
-    storages = [s1]
-    barns = [b1, b2]
-
-    f1 = Factory(r1,s1,r1)
-    f2 = Factory(r2,s1,r2)
-    d1 = Diner(r1,b1,r1)
-    d2 = Diner(r1,b2,r2)
-    d3 = Diner(r2,b2,r1)
-    fiel1 = Field(r1,b1,r1)
-    fiel2 = Field(r2,b2,r2)
-    h1 = House(r1,s1,r1)
-    h2 = House(r1,s1,r2)
-    h3 = House(r2,s1,r2)
-    h4 = House(r2,s1,r1)
-
-    transitions = [f1,h1,f2,d1,d2,h2,d3,fiel1,h3,fiel2,h4]
-
-    count = 0
-
-    print(type(transitions[0]).__name__ == 'Factory')
-
-    # while r1.que_length() > 0 or r2.que_length() > 0:
-    #     print(f'r1:{r1.que_length()}, r2:{r2.que_length()}, s1:{s1.que_length()}, b1:{b1.que_length()}, b2:{b2.que_length()}')
-    #     for i in transitions:
-    #         i.action()
-    #         count += 1
-    #     print('---')
-    # print(f'-------- count: {count} -------')
-    # print(f'r1:{r1.que_length()}, r2:{r2.que_length()}, s1:{s1.que_length()}, b1:{b1.que_length()}, b2:{b2.que_length()}')
-
-    while r1.que_length() > 0 or r2.que_length() > 0:
-        #print(f'r1:{r1.que_length()}, r2:{r2.que_length()}, s1:{s1.que_length()}, b1:{b1.que_length()}, b2:{b2.que_length()}')
-        for t in transitions:
-            t.action()
-            count += 1
-        
-        minSaldoStorage = 0
-        maxSaldoStorage = 0
-        minStorage = storages[0]
-        maxStorage = storages[0]
-        for i in storages:
-            if i.que_length() > maxSaldoStorage:
-                maxSaldoStorage = i.que_length()
-                maxStorage = i
-            elif i.que_length() < minSaldoStorage:
-                minSaldoStorage = i.que_length()
-                minStorage = i
-
-        minSaldoBarn = 0
-        maxSaldoBarn = 0
-        minBarn = barns[0]
-        maxBarn = barns[0]
-        for i in barns:
-            if i.que_length() > maxSaldoBarn:
-                maxSaldoBarn = i.que_length()
-                maxBarn = i
-            elif i.que_length() < minSaldoBarn:
-                minSaldoBarn = i.que_length()
-                minBarn = i
-
-        for i in roads:
-            if i.que_length() < 40:
-                transitions.append(House(r1,maxStorage,r1))
-            elif i.que_length() > 200:
-                if minStorage < 200:
-                    transitions.append(Factory(i,minStorage,i))
-                elif minStorage > 200:
-                    for x in transitions:
-                        if type(x).__name__ == 'House':
-                            if x.connections()[0] == r1:
-                                index = transitions.index(x)
-                                transitions.pop(index)
-        print('---')
-        print(f'-------- count: {count} -------')
-        print(f'transitioner--{len(transitions)}')
-        outputNames = [type(transitions[i]).__name__ for i in range(len(transitions))]
-        print(outputNames)
-        print(f'r1:{r1.que_length()}, r2:{r2.que_length()}, s1:{s1.que_length()}, b1:{b1.que_length()}, b2:{b2.que_length()}')
+Övriga designtips
+Vid deignen, fokusera inte på hur själva simuleringen ska utföras eller implementeras. Det är av mindre intresse och kan enkelt lösas senare i ett huvudprogram.
+Varje övergång ska egentligen fungera autonomt (självständigt), men det kan vi enbart ådstakomma med multitrådning (se utökning). Istället kan du ha en lista med alla övergångar som du itererar när övergången ska agera. Varje övergång behöver därför en metod som ska anropas när den ska agera.
