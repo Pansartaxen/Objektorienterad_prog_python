@@ -121,8 +121,8 @@ class House:
     def connections(self):
         return([self._pickup_worker,self._pickup_product,self._dropoff_worker])
 
-    def change_priority(self,create):
-        self._create_worker = create
+    def change_priority(self):
+        self._create_worker = not self._create_worker
 
     def action(self):
         if self._create_worker == True and self._pickup_worker.que_length() >= 2:
@@ -134,7 +134,7 @@ class House:
             self._worker = []
             for _ in range(random.randint(1,2)):
                 self._dropoff_worker.add_worker(Worker())
-        elif self._pickup_worker.que_length() == 1:
+        elif self._create_worker == False or self._pickup_worker.que_length() == 1:
             self._worker.append(self._pickup_worker.remove_worker())
             self._product.append(self._pickup_product.remove_product())
             self._worker[0].change_hp(50)
@@ -160,9 +160,8 @@ class Road:
         if x == 4:
             self._queue = self._queue[0:5]
 
-
     def add_worker(self, worker):
-        self.catastrophe()
+        #self.catastrophe()
         worker.change_hp(-((len(self._queue)))/10)
         if worker.is_alive():
             self._queue.append(worker)
@@ -315,13 +314,22 @@ if __name__ == "__main__":
             for i in roads:
                 if i.que_length() <= 100:
                     transitions.append(House(i,maxStorage,i))
+                    for x in transitions:
+                        if type(x).__name__ == 'House':
+                            x.change_priority()
+                            if x.connections()[2] == i:
+                                x.change_priority()
                 elif i.que_length() > 100:
                     for x in transitions:
                         if type(x).__name__ == 'House':
+                            popCount = 0
+                            x.change_priority()
                             if x.connections()[2] == i:
-                                index = transitions.index(x)
-                                transitions.pop(index)
-                                break
+                                x.change_priority()
+                                if popCount == 0:
+                                    index = transitions.index(x)
+                                    transitions.pop(index)
+                                    popCount += 1
 
             for i in barns:
                 if i.que_length() <= 25:
@@ -358,6 +366,7 @@ if __name__ == "__main__":
             y = ''
             output +=f' ||   r1:{r1.que_length():<3} r2:{r2.que_length():<3} r3:{r3.que_length():<3} s1:{s1.que_length():<3} s2:{s2.que_length():<3} b1:{b1.que_length():<3} b2:{b2.que_length():<2}'
             output += f'{y:<4}||    {set(x)}'
-            output += f'{y:<15}||'
+            #output += f'{y:<15}||'
             print(output)
+            print(150*'-')
     print('Alla dog :´(')
