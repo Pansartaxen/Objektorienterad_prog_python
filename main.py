@@ -3,8 +3,9 @@ import random
 import time
 class Accident_generator:
     def accident_check(self):
+        """Används för att se om en olycka sker eller ej"""
         accident = random.randint(1,10)
-        return(accident > 5)
+        return(accident > 6)
 
 class Diner:
     def __init__(self, inRoad, inBarn, outRoad):
@@ -13,52 +14,51 @@ class Diner:
         self._dropoff_worker = outRoad
         self._worker = []
         self._food = []
-        self._prio = True
     
     def set_in_worker(self, inRoad):
+        """Ändrar in-vägen för arbetare"""
         self._pickup_worker = inRoad
     
     def set_out_worker(self, outRoad):
+        """Ändrar ut-vägen för arbetare"""
         self._dropoff_worker = outRoad
     
     def set_in_food(self, inBarn):
+        """Ändrar in-vägen för mat"""
         self._pickup_food = inBarn
 
-    def change_priority(self, prio):
-        self._prio = prio
-
     def connections(self):
+        """Returnerar en lista innehållande alla in och utvägar"""
         return([self._pickup_worker,self._pickup_food,self._dropoff_worker])
 
     def action(self):
-        if self._prio:
-            self._worker.append(self._pickup_worker.remove_worker())
-            self._food.append(self._pickup_food.remove_food())
-            #if self._has_worker:
-            if self._worker[0] != None and self._food[0] != None:
-            #if self._has_food and self._has_worker:
-                quality = self._food[0].quality()
-                self._worker[0].change_hp(quality)
-                self._dropoff_worker.add_worker(self._worker[0])
-                self._worker.pop(0)
-                self._food.pop(0)
-                self._has_worker = False
-                self._has_food = False
+        """Hämtar samt matar arbetaren"""
+        self._worker.append(self._pickup_worker.remove_worker())
+        self._food.append(self._pickup_food.remove_food())
+        if self._worker[0] != None and self._food[0] != None:
+            quality = self._food[0].quality()
+            self._worker[0].change_hp(quality)
+            self._dropoff_worker.add_worker(self._worker[0])
+            self._worker.pop(0)
+            self._food.pop(0)
 
 class Barn:
     def __init__(self):
         self._queue = []
     
     def add_food(self):
+        """FIFO"""
         self._queue.append(Food())
 
     def remove_food(self):
+        """FIFO"""
         try:
             return(self._queue.pop(0))
         except:
             return(None)
     
     def que_length(self):
+        """Returnerar längden på self._queue"""
         return(len(self._queue))
 
 class Food:
@@ -77,18 +77,23 @@ class Field:
         self._accident = Accident_generator()
 
     def set_in_worker(self, inRoad):
+        """Ändrar in-vägen för arbetare"""
         self._pickup_worker = inRoad
     
     def set_out_worker(self, outRoad):
+        """Ändrar ut-vägen för arbetare"""
         self._dropoff_worker = outRoad
 
     def set_out_food(self, outBarn):
+        """Ändrar ut-vägen för mat"""
         self._dropoff_food = outBarn
 
     def connections(self):
+        """Returnerar en lista innehållande alla in och utvägar"""
         return([self._pickup_worker,self._dropoff_food,self._dropoff_worker])
 
     def action(self):
+        """Hämtar arbetare samt skapar mat"""
         self._worker.append(self._pickup_worker.remove_worker())
         if self._worker[0] != None:
             if self._accident.accident_check():
@@ -98,34 +103,35 @@ class Field:
                 self._dropoff_food.add_food()
             self._dropoff_worker.add_worker(self._worker[0])
             self._worker.pop(0)
-            self._has_worker = False
 
 class House:
     def __init__(self, inRoad, inStorage, outRoad):
         self._pickup_worker = inRoad
         self._pickup_product = inStorage
         self._dropoff_worker = outRoad
-        self._create_worker = True
         self._worker = []
         self._product = []
 
     def set_in_worker(self, inRoad):
+        """Ändrar in-vägen för arbetare"""
         self._pickup_worker = inRoad
     
     def set_out_worker(self, outRoad):
+        """Ändrar ut-vägen för arbetare"""
         self._dropoff_worker = outRoad
 
-    def set_out_product(self, inStorage):
+    def set_in_product(self, inStorage):
+        """Ändrar in-vägen för produkter"""
         self._pickup_product = inStorage
 
     def connections(self):
+        """Returnerar en lista innehållande alla in och utvägar"""
         return([self._pickup_worker,self._pickup_product,self._dropoff_worker])
 
-    def change_priority(self):
-        self._create_worker = not self._create_worker
-
     def action(self):
-        if self._create_worker == True and self._pickup_worker.que_length() >= 2:
+        """Skpar arbetare eller vilar upp arbetare beroende på hur många som finns i in-vägen"""
+        create = self._pickup_worker.que_length() >= 2
+        if self._pickup_worker.que_length() < 100 and create:
             self._worker.append(self._pickup_worker.remove_worker())
             self._worker.append(self._pickup_worker.remove_worker())
             self._product.append(self._pickup_product.remove_product())
@@ -134,34 +140,28 @@ class House:
             self._worker = []
             for _ in range(random.randint(1,2)):
                 self._dropoff_worker.add_worker(Worker())
-        elif self._create_worker == False or self._pickup_worker.que_length() == 1:
+        elif self._pickup_worker.que_length() >= 100 or not create:
             self._worker.append(self._pickup_worker.remove_worker())
-            self._product.append(self._pickup_product.remove_product())
-            self._worker[0].change_hp(50)
-            self._dropoff_worker.add_worker(self._worker[0])
-            self._worker.pop(0)
-            self._product.pop(0)
-        else:
-            return(False)
+            if self._worker[0] != None:
+                self._product.append(self._pickup_product.remove_product())
+                self._worker[0].change_hp(50)
+                self._dropoff_worker.add_worker(self._worker[0])
+            self._worker = []
+            self._product = []
 
 class Road:
     def __init__(self):
         self._queue = [Worker() for _ in range(2)]
 
     def remove_worker(self):
+        """FIFO"""
         try:
             return(self._queue.pop(0))
         except:
             return(None)
 
-    def catastrophe(self):
-        x = random.randint(1,1000)
-        y == int((len(self._queue))//10)
-        if x == 4:
-            self._queue = self._queue[0:5]
-
     def add_worker(self, worker):
-        #self.catastrophe()
+        """FIFO. Skadar arbetaren olika mycket beroende på köns längd"""
         worker.change_hp(-((len(self._queue)))/10)
         if worker.is_alive():
             self._queue.append(worker)
@@ -174,6 +174,7 @@ class Worker:
         self._hp = 100
     
     def change_hp(self, change):
+        """Ändrar arbetarens hälsa"""
         self._hp += change
 
     def is_alive(self):
@@ -189,21 +190,26 @@ class Factory:
         self._dropoff_worker = outRoad
         self._worker = []
         self._accident = Accident_generator()
-        self._damage = random.randint(-30,-10)
+        self._damage = random.randint(-40,-20)
 
     def set_in_worker(self, inRoad):
+        """Ändrar in-vägen för arbetare"""
         self._pickup_worker = inRoad
     
     def set_out_worker(self, outRoad):
+        """Ändrar ut-vägen för arbetare"""
         self._dropoff_worker = outRoad
 
     def set_out_product(self, outStorage):
+        """Ändrar ut-vägen för produkter"""
         self._dropoff_product = outStorage
 
     def connections(self):
+        """Returnerar en lista innehållande alla in och utvägar"""
         return([self._pickup_worker,self._dropoff_product,self._dropoff_worker])
 
     def action(self):
+        """Hämtar en arbetare samt skapar en produkt om arbetaren överlever"""
         self._worker.append(self._pickup_worker.remove_worker())
         if self._worker[0] != None:
             if self._accident.accident_check():
@@ -223,7 +229,6 @@ class Storage:
 
     def add_product(self, product):
         self._queue.append(product)
-
 
     def remove_product(self):
         try:
@@ -251,24 +256,10 @@ if __name__ == "__main__":
     roads = [r1,r2,r3]
     storages = [s1,s2]
     barns = [b1,b2]
-
-    f1 = Factory(r1,s1,r1)
-    f2 = Factory(r2,s1,r2)
-    d1 = Diner(r1,b1,r1)
-    d2 = Diner(r1,b2,r2)
-    d3 = Diner(r2,b2,r1)
-    fiel1 = Field(r1,b1,r1)
-    fiel2 = Field(r2,b2,r2)
-    h1 = House(r1,s1,r1)
-    h2 = House(r1,s1,r2)
-    h3 = House(r2,s1,r2)
-    h4 = House(r2,s1,r1)
-
     transitions = []
-
     count = 0
 
-    while r1.que_length() > 0 or r2.que_length() > 0:
+    while r1.que_length() > 0 or r2.que_length() > 0 or r3.que_length():
         time.sleep(0.05)
         for _ in range(1):
             for t in transitions:
@@ -314,22 +305,14 @@ if __name__ == "__main__":
             for i in roads:
                 if i.que_length() <= 100:
                     transitions.append(House(i,maxStorage,i))
-                    for x in transitions:
-                        if type(x).__name__ == 'House':
-                            x.change_priority()
-                            if x.connections()[2] == i:
-                                x.change_priority()
                 elif i.que_length() > 100:
                     for x in transitions:
                         if type(x).__name__ == 'House':
                             popCount = 0
-                            x.change_priority()
-                            if x.connections()[2] == i:
-                                x.change_priority()
-                                if popCount == 0:
-                                    index = transitions.index(x)
-                                    transitions.pop(index)
-                                    popCount += 1
+                            if popCount == 0:
+                                index = transitions.index(x)
+                                transitions.pop(index)
+                                popCount += 1
 
             for i in barns:
                 if i.que_length() <= 25:
@@ -366,7 +349,6 @@ if __name__ == "__main__":
             y = ''
             output +=f' ||   r1:{r1.que_length():<3} r2:{r2.que_length():<3} r3:{r3.que_length():<3} s1:{s1.que_length():<3} s2:{s2.que_length():<3} b1:{b1.que_length():<3} b2:{b2.que_length():<2}'
             output += f'{y:<4}||    {set(x)}'
-            #output += f'{y:<15}||'
             print(output)
             print(150*'-')
     print('Alla dog :´(')
